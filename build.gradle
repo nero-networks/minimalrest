@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'maven'
+}
+
+def release = project.hasProperty('release')
+
+version = '0.1.0.' + (release ? 'RELEASE' : 'SNAPSHOT')
+group 'org.molkex.spring'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.springframework.boot:spring-boot:2.1.6.RELEASE'
+    compileOnly 'org.springframework:spring-webmvc:5.0.9.RELEASE'
+
+    implementation 'io.swagger.codegen.v3:swagger-codegen:3.0.9'
+
+    implementation 'io.springfox:springfox-swagger2:2.9.2'
+    implementation 'io.springfox:springfox-swagger-ui:2.9.2'
+}
+
+compileJava.finalizedBy javadoc
+
+task packageSources(type: Jar, dependsOn: 'classes') {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+artifacts {
+    archives packageJavadoc
+    archives packageSources
+}

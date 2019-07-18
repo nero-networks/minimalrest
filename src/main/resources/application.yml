@@ -1,0 +1,14 @@
+
+minimalrest:
+#  swagger:
+#    clients:
+#      - codegenVersion: V2
+#        lang: io.swagger.codegen.languages.JavascriptClientCodegen
+#        options:
+#          output-dir: build/swagger
+#        installer: "
+#          cd build/swagger;
+#          mkdir node_modules/;
+#          npm i browserify superagent;
+#          echo 'window.Api = require(\"./src\")' > browser.js;
+#          node node_modules/browserify/bin/cmd.js -o ../../src/main/resources/static/api.js browser.js"
