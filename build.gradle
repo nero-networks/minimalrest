@@ -5,7 +5,7 @@ plugins {
 
 def release = project.hasProperty('release')
 
-version = '0.1.0.' + (release ? 'RELEASE' : 'SNAPSHOT')
+version = '0.1.1.' + (release ? 'RELEASE' : 'SNAPSHOT')
 group 'org.molkex.spring'
 
 sourceCompatibility = 1.8
@@ -23,6 +23,9 @@ dependencies {
 
     implementation 'io.springfox:springfox-swagger2:2.9.2'
     implementation 'io.springfox:springfox-swagger-ui:2.9.2'
+
+    implementation 'org.springframework:spring-websocket:5.1.8.RELEASE'
+    implementation 'javax.websocket:javax.websocket-api:1.1'
 }
 
 compileJava.finalizedBy javadoc

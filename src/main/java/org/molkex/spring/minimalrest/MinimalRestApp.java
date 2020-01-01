@@ -64,10 +64,10 @@ public class MinimalRestApp extends WebMvcConfigurationSupport implements Comman
                 .addResourceLocations("classpath:/static/");
     }
 
-    /** Register a / to /index.html 302 redirect */
+    /** Register a / to /index.html forward */
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addRedirectViewController("/", "index.html");
+        registry.addViewController("/").setViewName("forward:/index.html");
     }
 
     /*
