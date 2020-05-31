@@ -68,4 +68,27 @@ public class MinimalRestConfig {
             }
         }
     }
+
+    /** namespace container for values from ${minimalrest.storage} */
+    private StorageConfig storage = new StorageConfig();
+
+    public StorageConfig getStorage() {
+        return storage;
+    }
+
+    public void setStorage(StorageConfig storage) {
+        this.storage = storage;
+    }
+
+    public static class StorageConfig {
+        private String rootPath;
+
+        public String getRootPath() {
+            return rootPath;
+        }
+
+        public void setRootPath(String rootPath) {
+            this.rootPath = rootPath;
+        }
+    }
 }

@@ -24,6 +24,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 import springfox.documentation.swagger2.mappers.ServiceModelToSwagger2Mapper;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,7 +37,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
 @EnableSwagger2
 @ComponentScan("org.molkex.spring.minimalrest.config")
 public class MinimalRestApp extends WebMvcConfigurationSupport implements CommandLineRunner {
-    private Logger log = Logger.getLogger(MinimalRestApp.class.getName());
+    protected Logger log = Logger.getLogger(getClass().getName());
 
     @Autowired
     private DocumentationCache documentationCache;
@@ -50,6 +51,13 @@ public class MinimalRestApp extends WebMvcConfigurationSupport implements Comman
     private GeneratorService generatorService = new GeneratorService();
 
     private String[] commandLineArgs;
+
+    @PostConstruct
+    void init() {
+        if (config.getStorage().getRootPath() != null) {
+            MinimalStorage.ROOT_PATH = config.getStorage().getRootPath();
+        }
+    }
 
     /** Configure static webserver resources */
     @Override

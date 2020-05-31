@@ -3,10 +3,11 @@ package org.molkex.spring.minimalrest.tools;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Json {
+    private static ObjectMapper mapper = new ObjectMapper();
 
     public static <T> T read(String json, Class<T> type) {
         try {
-            return new ObjectMapper().readValue(json, type);
+            return mapper.readValue(json, type);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -14,7 +15,7 @@ public class Json {
 
     public static String write(Object object) {
         try {
-            return new ObjectMapper().writeValueAsString(object);
+            return mapper.writeValueAsString(object);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

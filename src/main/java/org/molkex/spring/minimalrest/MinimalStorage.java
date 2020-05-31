@@ -12,6 +12,8 @@ import java.util.function.Function;
 
 public class MinimalStorage<V extends MinimalStorage.Entity> {
 
+    static String ROOT_PATH = "./tmp/stores/";
+
     public static class Entity implements Serializable {
         @JsonIgnore MinimalStorage store;
         @JsonIgnore String key;
@@ -28,10 +30,12 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
     protected Map<String,V> data = new HashMap<>();
 
     protected File dir;
+
     protected Class<V> clazz;
+
     public MinimalStorage(String name, Class<V> clazz) {
         this.clazz = clazz;
-        dir = new File("./tmp/stores/"+name.replaceAll("/", "-"));
+        dir = new File(ROOT_PATH+name.replaceAll("/", "-"));
         dir.mkdirs();
     }
 
@@ -40,6 +44,9 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
     }
 
     public void put(String key, V value) {
+        if (!data.containsKey(key)) {
+            value.init();
+        }
         data.put(key, save(key, value));
     }
 
@@ -57,7 +64,18 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
         if (!data.containsKey(key)) {
             get(key); // tries to read from storage
         }
-        return data.computeIfAbsent(key, (k)-> save(k, create.apply(k)));
+        return data.computeIfAbsent(key, (k)-> {
+            V value = create.apply(key);
+            value.init();
+            return save(key, value);
+        });
+    }
+
+    public void delete(String key) {
+        File f = new File(dir, key.hashCode() + ".ministore");
+        if (f.exists() && f.delete()) {
+            data.remove(key);
+        }
     }
 
     V read(String key) {
@@ -68,7 +86,7 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
             entity.init();
             return entity;
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
         return null;
     }
@@ -84,11 +102,11 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
         return value;
     }
 
-    protected InputStream readStream(String key) throws FileNotFoundException {
+    protected InputStream readStream(String key) throws IOException {
         return new FileInputStream(new File(dir, key.hashCode() + ".ministore"));
     }
 
-    protected OutputStream writeStream(String key) throws FileNotFoundException {
+    protected OutputStream writeStream(String key) throws IOException {
         return new FileOutputStream(new File(dir, key.hashCode() + ".ministore"));
     }
 
@@ -96,7 +114,7 @@ public class MinimalStorage<V extends MinimalStorage.Entity> {
         return Json.write(value).getBytes();
     }
 
-    protected V deserialize(byte[] bytes) throws IOException {
+    protected V deserialize(byte[] bytes) {
         return Json.read(new String(bytes), clazz);
     }
 }

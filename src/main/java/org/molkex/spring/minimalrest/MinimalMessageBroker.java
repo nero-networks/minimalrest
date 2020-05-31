@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @Configuration
-public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHandler {
+public class MinimalMessageBroker implements WebSocketConfigurer, WebSocketHandler {
     private static Logger log = LoggerFactory.getLogger(MinimalMessageBroker.class);
 
     protected static final String PUBLISH = "PUBLISH";
@@ -28,6 +28,14 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
     protected static final String CLOSE = "CLOSE";
 
     protected Topic root = new Topic(null,"/", null);
+
+    public void publish(String topic, Object payload) {
+        handle(null, Message.publish(topic, Json.write(payload)));
+    }
+
+    public <T> Client subscribe(String topic, Class<T> type, Consumer<T> handler) {
+        return new Client(this, topic, m -> handler.accept(Json.read(m.getPayload(), type)));
+    }
 
     protected void handle(Client client, Message message) {
         switch (message.type) {
@@ -84,12 +92,17 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
     protected void afterPublish(Client client, Message message) {
     }
 
-    public void publish(String topic, Object payload) {
-        handle(null, Message.publish(topic, Json.write(payload)));
+    protected List<String> getTopics() {
+        return getTopics("", root.topics, new ArrayList<>());
     }
 
-    public <T> Client subscribe(String topic, Class<T> type, Consumer<T> handler) {
-        return new Client(this, topic, m -> handler.accept(Json.read(m.getPayload(), type)));
+    private List<String> getTopics(String prefix, Map<String, Topic> topics, ArrayList<String> list) {
+        if (topics.isEmpty())
+            list.add(prefix);
+        else
+            topics.forEach((name, topic) ->
+                getTopics(prefix+'/'+name, topic.topics, list));
+        return list;
     }
 
     protected static class Message {
@@ -135,13 +148,13 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
         public <T> T parse(Class<T> type) {
             return Json.read(payload, type);
         }
-        
+
         String cache;
         String cached() {
             if (cache == null) cache = Json.write(this);
             return cache;
         }
-        
+
         static Message close() {
             return new Message(CLOSE, "", null);
         }
@@ -161,19 +174,6 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
         public static Message from(String json) {
             return Json.read(json, Message.class);
         }
-    }
-
-    protected List<String> getTopics() {
-        return getTopics("", root.topics, new ArrayList<>());
-    }
-
-    private List<String> getTopics(String prefix, Map<String, Topic> topics, ArrayList<String> list) {
-        if (topics.isEmpty())
-            list.add(prefix);
-        else
-            topics.forEach((name, topic) ->
-                getTopics(prefix+'/'+name, topic.topics, list));
-        return list;
     }
 
     private static class Topic {
@@ -235,6 +235,7 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
                                     try {
                                         client.deliver(message);
                                     } catch (Exception e) {
+                                        log.error(e.getMessage(), e);
                                         client.close();
                                     }
                                 });
@@ -303,18 +304,21 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
         }
 
         public String getId() {
-            return session != null ? "R"+session.getId() : "L"+Integer.toString(hashCode());
+            return session != null ? "R"+session.getId() : "L"+hashCode();
         }
 
         public void deliver(Message message) {
-            if (session != null) {
+            if (session == null) {
+                consumer.accept(message);
+
+            } else if (session.isOpen()) {
                 try {
-                    session.sendMessage(new TextMessage(message.cached()));
+                    synchronized (session) {
+                        session.sendMessage(new TextMessage(message.cached()));
+                    }
                 } catch (Exception e) {
                     throw new ISE(e);
                 }
-            } else {
-                consumer.accept(message);
             }
         }
     }
@@ -341,7 +345,6 @@ public class MinimalMessageBroker implements WebSocketConfigurer,  WebSocketHand
     @Override
     public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
         handle(new Client(session), Message.from(message.getPayload().toString()));
-
     }
 
     @Override
